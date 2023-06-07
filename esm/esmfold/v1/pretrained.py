@@ -38,17 +38,19 @@ def _load_model(model_name):
     return model
 
 
-def esmfold_v0():
+def esmfold_v0(path: str):
     """
     ESMFold v0 model with 3B ESM-2, 48 folding blocks.
     This version was used for the paper (Lin et al, 2022). It was trained
     on all PDB chains until 2020-05, to ensure temporal holdout with CASP14
     and the CAMEO validation and test set reported there.
     """
-    return _load_model("esmfold_3B_v0")
+    if "esmfold_3B_v0" in path:
+        return _load_model(path)
+    return None
 
 
-def esmfold_v1():
+def esmfold_v1(path: str):
     """
     ESMFold v1 model using 3B ESM-2, 48 folding blocks.
     ESMFold provides fast high accuracy atomic level structure prediction
@@ -56,7 +58,9 @@ def esmfold_v1():
     protein language model to extract meaningful representations from the
     protein sequence.
     """
-    return _load_model("esmfold_3B_v1")
+    if "esmfold_3B_v1" in path:
+        return _load_model(path)
+    return None
 
 
 def esmfold_structure_module_only_8M():

@@ -91,9 +91,7 @@ def _load_model_and_alphabet_core_v1(model_data):
         # upgrade state dict
         pra = lambda s: "".join(s.split("encoder_")[1:] if "encoder" in s else s)
         prs1 = lambda s: "".join(s.split("encoder.")[1:] if "encoder" in s else s)
-        prs2 = lambda s: "".join(
-            s.split("sentence_encoder.")[1:] if "sentence_encoder" in s else s
-        )
+        prs2 = lambda s: "".join(s.split("sentence_encoder.")[1:] if "sentence_encoder" in s else s)
         model_args = {pra(arg[0]): arg[1] for arg in vars(model_data["args"]).items()}
         model_state = {prs1(prs2(arg[0])): arg[1] for arg in model_data["model"].items()}
         model_state["embed_tokens.weight"][alphabet.mask_idx].zero_()  # For token drop
@@ -113,9 +111,7 @@ def _load_model_and_alphabet_core_v1(model_data):
         # upgrade state dict
         pra = lambda s: "".join(s.split("encoder_")[1:] if "encoder" in s else s)
         prs1 = lambda s: "".join(s.split("encoder.")[1:] if "encoder" in s else s)
-        prs2 = lambda s: "".join(
-            s.split("sentence_encoder.")[1:] if "sentence_encoder" in s else s
-        )
+        prs2 = lambda s: "".join(s.split("sentence_encoder.")[1:] if "sentence_encoder" in s else s)
         prs3 = lambda s: s.replace("row", "column") if "row" in s else s.replace("column", "row")
         model_args = {pra(arg[0]): arg[1] for arg in vars(model_data["args"]).items()}
         model_state = {prs1(prs2(prs3(arg[0]))): arg[1] for arg in model_data["model"].items()}
@@ -145,9 +141,7 @@ def _load_model_and_alphabet_core_v1(model_data):
             return s
 
         model_state = {
-            update_name(sname): svalue
-            for sname, svalue in model_data["model"].items()
-            if "version" not in sname
+            update_name(sname): svalue for sname, svalue in model_data["model"].items() if "version" not in sname
         }
 
     else:
@@ -162,6 +156,7 @@ def _load_model_and_alphabet_core_v1(model_data):
 
 
 def _load_model_and_alphabet_core_v2(model_data):
+
     def upgrade_state_dict(state_dict):
         """Removes prefixes 'model.encoder.sentence_encoder.' and 'model.encoder.'."""
         prefixes = ["encoder.sentence_encoder.", "encoder."]
@@ -206,15 +201,10 @@ def load_model_and_alphabet_core(model_name, model_data, regression_data=None):
             error_msgs.append(f"Unexpected key(s) in state_dict: {unexpected}.")
 
         if error_msgs:
-            raise RuntimeError(
-                "Error(s) in loading state_dict for {}:\n\t{}".format(
-                    model.__class__.__name__, "\n\t".join(error_msgs)
-                )
-            )
+            raise RuntimeError("Error(s) in loading state_dict for {}:\n\t{}".format(
+                model.__class__.__name__, "\n\t".join(error_msgs)))
         if expected_missing - found_keys:
-            warnings.warn(
-                "Regression weights not found, predicting contacts will not produce correct results."
-            )
+            warnings.warn("Regression weights not found, predicting contacts will not produce correct results.")
 
     model.load_state_dict(model_state, strict=regression_data is not None)
 
@@ -273,8 +263,7 @@ def esm1b_t33_650M_UR50S():
 def esm_msa1_t12_100M_UR50S():
     warnings.warn(
         "This model had a minor bug in the positional embeddings, "
-        "please use ESM-MSA-1b: esm.pretrained.esm_msa1b_t12_100M_UR50S()",
-    )
+        "please use ESM-MSA-1b: esm.pretrained.esm_msa1b_t12_100M_UR50S()",)
     return load_model_and_alphabet_hub("esm_msa1_t12_100M_UR50S")
 
 
@@ -397,7 +386,7 @@ def esm2_t48_15B_UR50D():
     return load_model_and_alphabet_hub("esm2_t48_15B_UR50D")
 
 
-def esmfold_v0():
+def esmfold_v0(path: str):
     """
     ESMFold v0 model with 3B ESM-2, 48 folding blocks.
     This version was used for the paper (Lin et al, 2022). It was trained 
@@ -405,10 +394,10 @@ def esmfold_v0():
     and the CAMEO validation and test set reported there.
     """
     import esm.esmfold.v1.pretrained
-    return esm.esmfold.v1.pretrained.esmfold_v0()
+    return esm.esmfold.v1.pretrained.esmfold_v0(path)
 
 
-def esmfold_v1():
+def esmfold_v1(path: str):
     """
     ESMFold v1 model using 3B ESM-2, 48 folding blocks.
     ESMFold provides fast high accuracy atomic level structure prediction
@@ -417,7 +406,8 @@ def esmfold_v1():
     protein sequence.
     """
     import esm.esmfold.v1.pretrained
-    return esm.esmfold.v1.pretrained.esmfold_v1()
+    return esm.esmfold.v1.pretrained.esmfold_v1(path)
+
 
 def esmfold_structure_module_only_8M():
     """
