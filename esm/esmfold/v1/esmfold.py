@@ -34,16 +34,16 @@ class ESMFoldConfig:
 load_fn = esm.pretrained.load_model_and_alphabet_local
 esm_registry = {
     "esm2_8M": partial(load_fn, "/data/transformers/esm2_t6_8M_UR50D/esm2_t6_8M_UR50D_500K.pt"),
-    "esm2_8M_270K": esm.pretrained.esm2_t6_8M_UR50D,
+    "esm2_8M_270K": partial(load_fn, "/data/transformers/esm2_t6_8M_UR50D/esm2_t6_8M_UR50D.pt"),
     "esm2_35M": partial(load_fn, "/data/transformers/esm2_t12_35M_UR50D/esm2_t12_35M_UR50D_500K.pt"),
-    "esm2_35M_270K": esm.pretrained.esm2_t12_35M_UR50D,
+    "esm2_35M_270K": partial(load_fn, "/data/transformers/esm2_t12_35M_UR50D/esm2_t12_35M_UR50D.pt"),
     "esm2_150M": partial(load_fn, "/data/transformers/esm2_t30_150M_UR50D/esm2_t30_150M_UR50D_500K.pt"),
     "esm2_150M_270K": partial(load_fn, "/data/transformers/esm2_t30_150M_UR50D/esm2_t30_150M_UR50D_270K.pt"),
-    "esm2_650M": esm.pretrained.esm2_t33_650M_UR50D,
+    "esm2_650M": partial(load_fn, "/data/transformers/esm2_t33_650M_UR50D/esm2_t33_650M_UR50D.pt"),
     "esm2_650M_270K": partial(load_fn, "/data/transformers/esm2_t33_650M_UR50D/esm2_t33_650M_270K_UR50D.pt"),
-    "esm2_3B": esm.pretrained.esm2_t36_3B_UR50D,
+    "esm2_3B": partial(load_fn, "/data/transformers/esm2_t36_3B_UR50D/esm2_t36_3B_UR50D.pt"),
     "esm2_3B_270K": partial(load_fn, "/data/transformers/esm2_t36_3B_UR50D/esm2_t36_3B_UR50D_500K.pt"),
-    "esm2_15B": esm.pretrained.esm2_t48_15B_UR50D,
+    "esm2_15B": partial(load_fn, "/data/transformers/esm2_t48_15B_UR50D/esm2_t48_15B_UR50D.pt"),
 }
 
 
