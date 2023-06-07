@@ -31,23 +31,24 @@ class ESMFoldConfig:
     lddt_head_hid_dim: int = 128
 
 
-load_fn = esm.pretrained.load_model_and_alphabet
+load_fn = esm.pretrained.load_model_and_alphabet_local
 esm_registry = {
-    "esm2_8M": partial(load_fn, "esm2_t6_8M_UR50D_500K"),
+    "esm2_8M": partial(load_fn, "/data/transformers/esm2_t6_8M_UR50D/esm2_t6_8M_UR50D_500K.pt"),
     "esm2_8M_270K": esm.pretrained.esm2_t6_8M_UR50D,
-    "esm2_35M": partial(load_fn, "esm2_t12_35M_UR50D_500K"),
+    "esm2_35M": partial(load_fn, "/data/transformers/esm2_t12_35M_UR50D/esm2_t12_35M_UR50D_500K.pt"),
     "esm2_35M_270K": esm.pretrained.esm2_t12_35M_UR50D,
-    "esm2_150M": partial(load_fn, "esm2_t30_150M_UR50D_500K"),
-    "esm2_150M_270K": partial(load_fn, "esm2_t30_150M_UR50D_270K"),
+    "esm2_150M": partial(load_fn, "/data/transformers/esm2_t30_150M_UR50D/esm2_t30_150M_UR50D_500K.pt"),
+    "esm2_150M_270K": partial(load_fn, "/data/transformers/esm2_t30_150M_UR50D/esm2_t30_150M_UR50D_270K.pt"),
     "esm2_650M": esm.pretrained.esm2_t33_650M_UR50D,
-    "esm2_650M_270K": partial(load_fn, "esm2_t33_650M_270K_UR50D"),
+    "esm2_650M_270K": partial(load_fn, "/data/transformers/esm2_t33_650M_UR50D/esm2_t33_650M_270K_UR50D.pt"),
     "esm2_3B": esm.pretrained.esm2_t36_3B_UR50D,
-    "esm2_3B_270K": partial(load_fn, "esm2_t36_3B_UR50D_500K"),
+    "esm2_3B_270K": partial(load_fn, "/data/transformers/esm2_t36_3B_UR50D/esm2_t36_3B_UR50D_500K.pt"),
     "esm2_15B": esm.pretrained.esm2_t48_15B_UR50D,
 }
 
 
 class ESMFold(nn.Module):
+
     def __init__(self, esmfold_config=None, **kwargs):
         super().__init__()
 
@@ -106,18 +107,14 @@ class ESMFold(nn.Module):
     @staticmethod
     def _af2_to_esm(d: Alphabet):
         # Remember that t is shifted from residue_constants by 1 (0 is padding).
-        esm_reorder = [d.padding_idx] + [
-            d.get_idx(v) for v in residue_constants.restypes_with_x
-        ]
+        esm_reorder = [d.padding_idx] + [d.get_idx(v) for v in residue_constants.restypes_with_x]
         return torch.tensor(esm_reorder)
 
     def _af2_idx_to_esm_idx(self, aa, mask):
         aa = (aa + 1).masked_fill(mask != 1, 0)
         return self.af2_to_esm[aa]
 
-    def _compute_language_model_representations(
-        self, esmaa: torch.Tensor
-    ) -> torch.Tensor:
+    def _compute_language_model_representations(self, esmaa: torch.Tensor) -> torch.Tensor:
         """Adds bos/eos tokens for the language model, since the structure module doesn't use these."""
         batch_size = esmaa.size(0)
 
@@ -133,15 +130,10 @@ class ESMFold(nn.Module):
             repr_layers=range(self.esm.num_layers + 1),
             need_head_weights=self.cfg.use_esm_attn_map,
         )
-        esm_s = torch.stack(
-            [v for _, v in sorted(res["representations"].items())], dim=2
-        )
+        esm_s = torch.stack([v for _, v in sorted(res["representations"].items())], dim=2)
         esm_s = esm_s[:, 1:-1]  # B, L, nLayers, C
-        esm_z = (
-            res["attentions"].permute(0, 4, 3, 1, 2).flatten(3, 4)[:, 1:-1, 1:-1, :]
-            if self.cfg.use_esm_attn_map
-            else None
-        )
+        esm_z = (res["attentions"].permute(0, 4, 3, 1, 2).flatten(3, 4)[:, 1:-1,
+                                                                        1:-1, :] if self.cfg.use_esm_attn_map else None)
         return esm_s, esm_z
 
     def _mask_inputs_to_esm(self, esmaa, pattern):
@@ -209,15 +201,10 @@ class ESMFold(nn.Module):
 
         s_s_0 += self.embedding(aa)
 
-        structure: dict = self.trunk(
-            s_s_0, s_z_0, aa, residx, mask, no_recycles=num_recycles
-        )
+        structure: dict = self.trunk(s_s_0, s_z_0, aa, residx, mask, no_recycles=num_recycles)
         # Documenting what we expect:
         structure = {
-            k: v
-            for k, v in structure.items()
-            if k
-            in [
+            k: v for k, v in structure.items() if k in [
                 "s_z",
                 "s_s",
                 "frames",
@@ -240,40 +227,29 @@ class ESMFold(nn.Module):
         make_atom14_masks(structure)
 
         for k in [
-            "atom14_atom_exists",
-            "atom37_atom_exists",
+                "atom14_atom_exists",
+                "atom37_atom_exists",
         ]:
             structure[k] *= mask.unsqueeze(-1)
         structure["residue_index"] = residx
 
-        lddt_head = self.lddt_head(structure["states"]).reshape(
-            structure["states"].shape[0], B, L, -1, self.lddt_bins
-        )
+        lddt_head = self.lddt_head(structure["states"]).reshape(structure["states"].shape[0], B, L, -1, self.lddt_bins)
         structure["lddt_head"] = lddt_head
         plddt = categorical_lddt(lddt_head[-1], bins=self.lddt_bins)
-        structure["plddt"] = (
-            100 * plddt
-        )  # we predict plDDT between 0 and 1, scale to be between 0 and 100.
+        structure["plddt"] = (100 * plddt)  # we predict plDDT between 0 and 1, scale to be between 0 and 100.
 
         ptm_logits = self.ptm_head(structure["s_z"])
 
         seqlen = mask.type(torch.int64).sum(1)
         structure["ptm_logits"] = ptm_logits
-        structure["ptm"] = torch.stack(
-            [
-                compute_tm(
-                    batch_ptm_logits[None, :sl, :sl],
-                    max_bins=31,
-                    no_bins=self.distogram_bins,
-                )
-                for batch_ptm_logits, sl in zip(ptm_logits, seqlen)
-            ]
-        )
-        structure.update(
-            compute_predicted_aligned_error(
-                ptm_logits, max_bin=31, no_bins=self.distogram_bins
-            )
-        )
+        structure["ptm"] = torch.stack([
+            compute_tm(
+                batch_ptm_logits[None, :sl, :sl],
+                max_bins=31,
+                no_bins=self.distogram_bins,
+            ) for batch_ptm_logits, sl in zip(ptm_logits, seqlen)
+        ])
+        structure.update(compute_predicted_aligned_error(ptm_logits, max_bin=31, no_bins=self.distogram_bins))
 
         return structure
 
@@ -306,18 +282,15 @@ class ESMFold(nn.Module):
         if isinstance(sequences, str):
             sequences = [sequences]
 
-        aatype, mask, _residx, linker_mask, chain_index = batch_encode_sequences(
-            sequences, residue_index_offset, chain_linker
-        )
+        aatype, mask, _residx, linker_mask, chain_index = batch_encode_sequences(sequences, residue_index_offset,
+                                                                                 chain_linker)
 
         if residx is None:
             residx = _residx
         elif not isinstance(residx, torch.Tensor):
             residx = collate_dense_tensors(residx)
 
-        aatype, mask, residx, linker_mask = map(
-            lambda x: x.to(self.device), (aatype, mask, residx, linker_mask)
-        )
+        aatype, mask, residx, linker_mask = map(lambda x: x.to(self.device), (aatype, mask, residx, linker_mask))
 
         output = self.forward(
             aatype,
@@ -327,13 +300,10 @@ class ESMFold(nn.Module):
             num_recycles=num_recycles,
         )
 
-        output["atom37_atom_exists"] = output[
-            "atom37_atom_exists"
-        ] * linker_mask.unsqueeze(2)
+        output["atom37_atom_exists"] = output["atom37_atom_exists"] * linker_mask.unsqueeze(2)
 
         output["mean_plddt"] = (output["plddt"] * output["atom37_atom_exists"]).sum(
-            dim=(1, 2)
-        ) / output["atom37_atom_exists"].sum(dim=(1, 2))
+            dim=(1, 2)) / output["atom37_atom_exists"].sum(dim=(1, 2))
         output["chain_index"] = chain_index
 
         return output
