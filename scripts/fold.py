@@ -95,7 +95,7 @@ def create_parser():
         "-m",
         "--model-path",
         type=Path,
-        default=None,
+        default="/data/transformers/esmfold_v1/esmfold_3B_v1.pt",
         help="Path to Pretrained ESM model (e.g. esmfold_3B_v1.pt).",
     )
     parser.add_argument(
